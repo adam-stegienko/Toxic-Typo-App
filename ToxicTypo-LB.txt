@@ -1,0 +1,29 @@
+ToxicTypo LB
+------------
+Toxic typo LB is based on ToxicTypoApp, but add an additional API: http://<server:port>/api/name
+- POST to it with a form param "name" to set the name
+- GET it to know what the last set name is
+
+We will use this app to excercise our use of AWS EC2, and particulary it's Load Balancer (ELB or ALB) 
+
+Since it is based on ToxicTypo, you can build on your previous work.
+
+The excercise:
+(1) Push source into gitlab
+(2) Dockerize the app
+(3) Test locally
+	(a) That you have a working ToxicTypo
+	(b) That /api/name works
+(4) Create a jenkins pipeline on master that:
+	(a) Builds the application
+	(b) Builds the docker image
+	(c) Pushes the docker image to ECR
+(5) In AWS create 2 EC2 instances and configure ELB as their gateway
+	(a) Each instance should run a single ToxicTypoLB on 8080
+	(b) You should be able to call the new api from outside of AWS
+(6) Demonstrate to yourself that you are indid accessing both servers
+(7) Improve the pipeline - after you pushed to ECR
+	(a) remove instance1 from ELB
+	(b) update instance1 to the new docker image and restart it
+	(c) connect instance1 to ELB
+	(d) do the same to instance2

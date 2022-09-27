@@ -1,0 +1,28 @@
+ToxicTypo Application
+
+The ToxicTypo Application team is responsible for maintaining the ToxicTypo demostration. This is a web application in AWS which allows customers to try the suggest lib we built earlier this week.
+They are a SaaS, so they expect "Continuos Deployment"
+They are part of the same company, so they subscribe to the "Feature branches" philosophy: Developers work in Feature branches, make merge requests when they are ready. The master branch is CDed to AWS.
+
+Your tasks:
+(1) Dockerize the ToxicTypo application (it is a java, SpringBoot web application)
+(2) Create an MBP in jenkins that:
+    - serves developers on feature branches (does CI + testing)
+    - serves production on master (does CI + testing + Deploy to AWS)
+(3) Bonus: Handle a customer complaint: E2E tests take too long to run. They must run in less than 10 seconds.
+
+Work plan:
+(1) Download the ToxicTypoApp to your local machine
+(2) Open a new repository in your gitlab, and upload it there
+(3) Dockerize the application:
+    (a) Use a maven image for the build (or build directly on Jenkins) 
+    (b) Use a java image for runtime 
+        - Some technical details:
+        -- Build: mvn verify. The artifact is in target folder
+        -- Ports: The application runs on port 8080. Try it in your browser
+    (c) Use a Python 2.7 image to run the e2e tests
+        -- E2E tests: run the "src/test/e2e_tests.py" script
+(4) Create a Jenkins MBP:
+    - feature/* - "Build", "Test", report on failure
+    - master - "Build", "Test", "Deploy to AWS"
+(5) Bonus: Improve test performance by executing test batches concurrently
