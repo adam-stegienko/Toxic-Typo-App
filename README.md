@@ -22,3 +22,12 @@ HELPING CHECKPOINTS:
 6. Create a MBP:
 	a. Feature branches --> CI + testing --> Build, Test, Report on Failure
 	b. Master branch --> CI (Build) + testing + deploy to AWS (PROD)
+
+
+ADD THIS TO YOUR CODE!
+stage('Cleaning') {
+	steps {
+		deleteDir()
+		checkout scm
+	}
+}
