@@ -1,4 +1,4 @@
-# Toxic Typo App
+# toxic-typo-app
 
 #### Project Overview
 
