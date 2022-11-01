@@ -2,7 +2,7 @@ FROM python:2.7-slim
 COPY ./toxictypoapp/src/test /usr/app/src/test
 WORKDIR /usr/app/src/test
 RUN pip install requests
-ENV IP_ADDRESS="3.125.51.254:8000"
+ENV IP_ADDRESS="18.159.41.65:8000"
 RUN echo "#!/bin/bash \n python2 ./e2e_test.py ${IP_ADDRESS} sanity 10" > ./entry-point.sh
 RUN chmod +x ./entry-point.sh
 ENTRYPOINT ["./entry-point.sh"]

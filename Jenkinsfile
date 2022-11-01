@@ -11,15 +11,7 @@ pipeline {
                     properties([
                         disableConcurrentBuilds(), 
                         gitLabConnection(gitLabConnection: 'GitLab API Connection', jobCredentialId: ''), 
-                        [$class: 'GitlabLogoProperty', repositoryName: 'adam/suggest-lib'], 
-                        parameters([
-                            validatingString(
-                                description: 'Put "feature" and a 2-digit value meaning the branch you would like to build your version on, as in the following examples: "feature/1.0", "feature/1.1", "feature/1.2", etc. Parameter also available for master branch.',
-                                failedValidationMessage: 'Parameter format is not valid. Try again with valid parameter format.', 
-                                name: 'Version', 
-                                regex: '^master$|^feature\\/[0-9]{1,}\\.[0-9]{1,}$'
-                            )
-                        ]), 
+                        [$class: 'GitlabLogoProperty', repositoryName: 'adam/suggest-lib']
                     ])
                 }
             }
@@ -36,33 +28,32 @@ pipeline {
             when { branch "feature/*" }
             steps{
                 script {
-                    BRANCH = params.Version
                     sh"""
                         git checkout master
-                        git remote set-url origin http://\"$GITLAB\"@ec2-3-125-51-254.eu-central-1.compute.amazonaws.com/adam/toxic-typo.git
+                        git remote set-url origin http://\"$GITLAB\"@gitlab_repo/adam/toxic-typo.git
                         git pull --rebase
                     """
                     BRANCH_EXISTING = sh(
-                        script: "(git ls-remote -q | grep -w $BRANCH) || BRANCH_EXISTING=False",
+                        script: "(git ls-remote -q | grep -w $BRANCH_NAME) || BRANCH_EXISTING=False",
                         returnStdout: true,
                     )
                         if (BRANCH_EXISTING) {
-                            echo "The $BRANCH branch is already existing."
+                            echo "The $BRANCH_NAME branch is already existing."
                             sh """
-                            git checkout $BRANCH
-                            git pull origin $BRANCH --rebase
+                            git checkout $BRANCH_NAME
+                            git pull origin $BRANCH_NAME --rebase
                             git fetch --tags
                             """
                         } else {
-                            echo "The $BRANCH branch is not exsiting yet and needs to be created."
+                            echo "The $BRANCH_NAME branch is not exsiting yet and needs to be created."
                             sh"""
-                            git branch $BRANCH
-                            git checkout $BRANCH
-                            git remote set-url origin http://\"$GITLAB\"@ec2-3-125-51-254.eu-central-1.compute.amazonaws.com/adam/toxic-typo.git
+                            git branch $BRANCH_NAME
+                            git checkout $BRANCH_NAME
+                            git remote set-url origin http://\"$GITLAB\"@gitlab_repo/adam/toxic-typo.git
                             git fetch --tags
                             """
                         }
-                    MINOR_VERSION = BRANCH.split("/")[1]
+                    MINOR_VERSION = BRANCH_NAME.split("/")[1]
                     LATEST_TAG = sh(
                         script: "git tag | sort -V | grep '^$MINOR_VERSION' | tail -1  || true",
                         returnStdout: true,
@@ -81,14 +72,13 @@ pipeline {
                     }
                 }
             }
-        stage('Master branch versioning') {
+        stage('Master branch versioning') {     
             when { branch "master" }
             steps{
                 script {
-                    BRANCH = env.BRANCH_NAME
                     sh"""
                         git checkout master
-                        git remote set-url origin http://\"$GITLAB\"@ec2-3-125-51-254.eu-central-1.compute.amazonaws.com/adam/toxic-typo.git
+                        git remote set-url origin http://\"$GITLAB\"@gitlab_repo/adam/toxic-typo.git
                         git pull --rebase
                         git fetch --tags
                     """
@@ -118,12 +108,12 @@ pipeline {
             steps {
                 script {
                     sh"""
-                    docker stop toxic_typo
-                    docker rm toxic_typo
-                    docker run -d --name=toxic_typo -p 8000:8080 adam-toxictypo:$VERSION_TAG > test_logs.txt
+                    docker rm -f toxic_typo
+                    docker run -d --name=toxic_typo -p 8000:8080 adam-toxictypo:$VERSION_TAG
                     docker build -t python_tester:latest -f Dockerfile.python .
                     docker run --rm --name=python_test python_tester:latest
                     docker rmi python_tester:latest
+                    docker rm -f toxic_typo
                     """
                 }
             }
@@ -148,15 +138,16 @@ pipeline {
             steps {
                 script {
                     sh"""
-                    ssh -t -i "/var/jenkins_home/adam-lab.pem" ubuntu@18.192.58.176
+                    ssh -i "/var/jenkins_home/adam-lab.pem" ubuntu@3.126.120.246
                     aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 644435390668.dkr.ecr.eu-central-1.amazonaws.com
+                    docker rmi -f 644435390668.dkr.ecr.eu-central-1.amazonaws.com/adam-toxictypo:latest
                     docker pull 644435390668.dkr.ecr.eu-central-1.amazonaws.com/adam-toxictypo:latest
-                    docker stop toxic_typo
-                    docker rm toxic_typo
-                    docker run --name=toxic_typo -d -p 8000:8080 644435390668.dkr.ecr.eu-central-1.amazonaws.com/adam-toxictypo:latest
                     sleep 5
-                    curl http://18.192.58.176:8000
+                    docker rm -f toxic_typo
+                    docker run --name=toxic_typo -d -p 8001:8080 644435390668.dkr.ecr.eu-central-1.amazonaws.com/adam-toxictypo:latest
                     """
+                    sh "sleep 5"
+                    sh "curl http://3.126.120.246:8001"
                 }
             }
         }
@@ -167,8 +158,8 @@ pipeline {
                     git config --global user.email "adam.stegienko1@gmail.com"
                     git config --global user.name "Adam Stegienko"
                     git clean -f -x
-                    git tag -a $NEW_TAG -m \"New $NEW_TAG tag added to latest commit on branch $BRANCH\"
-                    git push origin $BRANCH --tag
+                    git tag -a $NEW_TAG -m \"New $NEW_TAG tag added to latest commit on branch $BRANCH_NAME\"
+                    git push origin $BRANCH_NAME --tag
                     """
                     echo "All new tags have been pushed to GitLab repo."
                 }
